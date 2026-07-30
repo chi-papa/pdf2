@@ -5,12 +5,18 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
-    base: './',
+    base: process.env.GITHUB_REPOSITORY
+      ? `/${process.env.GITHUB_REPOSITORY.split('/')[1]}/`
+      : './',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
       },
+    },
+    build: {
+      target: 'esnext',
+      outDir: 'dist',
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
