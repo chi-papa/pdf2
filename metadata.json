@@ -1,0 +1,6 @@
+{
+  "name": "FAX PDF自動仕分けアプリ",
+  "description": "FAXで届いたPDFを四隅の識別マーク（●/■）で画像解析し、注文書や在庫確認書類を自動判別して指定フォルダへ仕分けるツール",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
