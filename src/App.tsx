@@ -11,7 +11,7 @@ import { DetectionSettings, FaxDocument, FolderConfig, ProcessingLog } from './t
 import { DEFAULT_DETECTION_SETTINGS } from './utils/markDetector';
 import { processPdfDocument } from './utils/pdfRenderer';
 import { createSampleFaxPdf } from './utils/pdfGenerator';
-import { FolderSync, FileText, CheckCircle2, ShieldAlert, Sparkles, Sliders } from 'lucide-react';
+import { FileText, CheckCircle2, ShieldAlert } from 'lucide-react';
 
 export default function App() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -429,7 +429,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
-        FAX PDF 自動仕分けシステム &copy; 2026 | 四隅マーク画像解析 (● 注文書 / ■ 在庫確認)
+        FAX PDF 自動仕分けシステム &copy; 2026 | 四隅マーク画像解析 (■ 注文書 / ● 在庫確認)
       </footer>
 
       {/* Visual Corner Inspection Modal */}

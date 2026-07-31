@@ -12,6 +12,8 @@ import {
   HelpCircle,
   Image as ImageIcon,
   Sparkles,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { DetectionSettings, FolderConfig, PageAnalysis } from '../types';
 import { DEFAULT_DETECTION_SETTINGS, analyzeCanvasPage } from '../utils/markDetector';
@@ -209,29 +211,55 @@ export const FolderConfigPanel: React.FC<FolderConfigPanelProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6 transition-all">
-      {/* Panel Header Toggle */}
+    <div className={`bg-white rounded-2xl border transition-all duration-200 mb-6 shadow-sm overflow-hidden ${
+      isOpen ? 'border-blue-500/80 ring-2 ring-blue-500/10' : 'border-slate-200 hover:border-blue-400'
+    }`}>
+      {/* Panel Header Toggle - Clear Accordion UI */}
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-5 py-4 bg-slate-50 hover:bg-slate-100/90 flex items-center justify-between text-left transition-all border-b border-slate-200/80 cursor-pointer"
+        className={`w-full px-5 py-4 flex items-center justify-between text-left transition-all cursor-pointer ${
+          isOpen ? 'bg-blue-50/60 border-b border-blue-100' : 'bg-slate-50 hover:bg-blue-50/30'
+        }`}
+        aria-expanded={isOpen}
       >
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs">
-            <Sliders className="w-5 h-5 text-white" />
+        <div className="flex items-center space-x-3.5">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+            isOpen ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'bg-slate-800 text-slate-100'
+          }`}>
+            <Sliders className="w-5 h-5" />
           </div>
+
           <div>
-            <h2 className="font-bold text-slate-900 text-sm sm:text-base flex items-center space-x-2">
-              <span>環境設定 & マーク検出スライダー調整</span>
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              保存先フォルダパスの設定や、かすれたFAX画像のマーク判定閾値をリアルタイム検証
+            <div className="flex items-center space-x-2">
+              <span className="text-[10px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200">
+                折りたたみ設定パネル
+              </span>
+              <h2 className="font-bold text-slate-900 text-sm sm:text-base">
+                環境設定 & マーク検出スライダー調整
+              </h2>
+            </div>
+            <p className="text-xs text-slate-600 mt-1 flex flex-wrap items-center gap-x-2">
+              <span>保存先フォルダパス・二値化閾値スライダー・Python監視コード生成</span>
+              {!isOpen && (
+                <span className="inline-flex items-center space-x-1 text-[11px] font-medium text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
+                  <span>(注文書: {folderConfig.purchaseOrderFolder || '未設定'})</span>
+                </span>
+              )}
             </p>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-white text-blue-700 border border-slate-200 shadow-2xs">
-            {isOpen ? '閉じる ▲' : '設定を開く ▼'}
-          </span>
+
+        {/* Clear Toggle Action Button */}
+        <div className="flex items-center space-x-3 shrink-0 ml-2">
+          <div className={`px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center space-x-1.5 transition-all shadow-xs ${
+            isOpen
+              ? 'bg-blue-600 text-white shadow-blue-600/20'
+              : 'bg-white text-slate-700 border border-slate-300 hover:border-blue-500 hover:text-blue-700'
+          }`}>
+            <span>{isOpen ? '設定パネルを閉じる' : '設定パネルを開く'}</span>
+            {isOpen ? <ChevronUp className="w-4 h-4 text-white" /> : <ChevronDown className="w-4 h-4 text-slate-600" />}
+          </div>
         </div>
       </button>
 
