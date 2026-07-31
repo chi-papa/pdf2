@@ -14,7 +14,6 @@ import { createSampleFaxPdf } from './utils/pdfGenerator';
 import { FolderSync, FileText, CheckCircle2, ShieldAlert, Sparkles, Sliders } from 'lucide-react';
 
 export default function App() {
-  const [isMonitoring, setIsMonitoring] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [documents, setDocuments] = useState<FaxDocument[]>([]);
   const [logs, setLogs] = useState<ProcessingLog[]>([]);
@@ -25,17 +24,48 @@ export default function App() {
   const [isSampleGenOpen, setIsSampleGenOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | '注文書' | '在庫確認' | '対象外'>('all');
 
-  // Configurations
-  const [folderConfig, setFolderConfig] = useState<FolderConfig>({
-    inputFolder: '/FAX_Received',
-    purchaseOrderFolder: '/FAX_Received/注文書',
-    inventoryFolder: '/FAX_Received/在庫確認',
-    unclassifiedFolder: '/FAX_Received/対象外',
-    autoDeleteOriginal: false,
-    createUnclassifiedSubfolder: true,
+  // Load saved Configurations from LocalStorage if available
+  const [folderConfig, setFolderConfig] = useState<FolderConfig>(() => {
+    try {
+      const saved = localStorage.getItem('fax_ocr_folder_config');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error('Failed to parse saved folder config', e);
+    }
+    return {
+      purchaseOrderFolder: 'C:\\FAX_Sorted\\注文書',
+      inventoryFolder: 'C:\\FAX_Sorted\\在庫確認',
+      unclassifiedFolder: 'C:\\FAX_Sorted\\対象外',
+      autoDeleteOriginal: false,
+    };
   });
 
-  const [detectionSettings, setDetectionSettings] = useState<DetectionSettings>(DEFAULT_DETECTION_SETTINGS);
+  const [detectionSettings, setDetectionSettings] = useState<DetectionSettings>(() => {
+    try {
+      const saved = localStorage.getItem('fax_ocr_detection_settings');
+      if (saved) return { ...DEFAULT_DETECTION_SETTINGS, ...JSON.parse(saved) };
+    } catch (e) {
+      console.error('Failed to parse saved detection settings', e);
+    }
+    return DEFAULT_DETECTION_SETTINGS;
+  });
+
+  // Save configurations on update
+  useEffect(() => {
+    try {
+      localStorage.setItem('fax_ocr_folder_config', JSON.stringify(folderConfig));
+    } catch (e) {
+      console.error('Failed to save folder config', e);
+    }
+  }, [folderConfig]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('fax_ocr_detection_settings', JSON.stringify(detectionSettings));
+    } catch (e) {
+      console.error('Failed to save detection settings', e);
+    }
+  }, [detectionSettings]);
 
   // Helper log addition
   const addLog = useCallback(
@@ -184,21 +214,21 @@ export default function App() {
           addLog(
             'success',
             doc.fileName,
-            `四隅●(黒丸)を検出。${folderConfig.purchaseOrderFolder} へコピーを保存しました。`,
+            `四隅■(黒四角)を検出。注文書として ${folderConfig.purchaseOrderFolder} へ分類保存しました。`,
             '注文書'
           );
         } else if (matchedCategory === '在庫確認') {
           addLog(
             'success',
             doc.fileName,
-            `四隅■(黒四角)を検出。${folderConfig.inventoryFolder} へコピーを保存しました。`,
+            `四隅●(黒丸)を検出。在庫確認として ${folderConfig.inventoryFolder} へ分類保存しました。`,
             '在庫確認'
           );
         } else {
           addLog(
             'warning',
             doc.fileName,
-            `四隅に該当マークが見つかりません。対象外(${folderConfig.unclassifiedFolder})として整理されました。`,
+            `四隅マーク不一致。対象外(${folderConfig.unclassifiedFolder})として整理されました。`,
             '対象外'
           );
         }
@@ -224,16 +254,16 @@ export default function App() {
     setIsProcessing(false);
   }, [documents, processSingleDoc]);
 
-  // Automated Watcher Trigger when isMonitoring is ON
+  // Automatic immediate processing for newly added/dropped pending files
   useEffect(() => {
-    if (!isMonitoring || isProcessing) return;
+    if (isProcessing) return;
 
     const pending = documents.find((d) => d.status === 'pending');
     if (pending) {
       setIsProcessing(true);
       processSingleDoc(pending).finally(() => setIsProcessing(false));
     }
-  }, [isMonitoring, documents, isProcessing, processSingleDoc]);
+  }, [documents, isProcessing, processSingleDoc]);
 
   // File Upload Handlers
   const handleUploadFiles = async (fileList: FileList) => {
@@ -256,7 +286,7 @@ export default function App() {
         pages: [],
       });
 
-      addLog('info', file.name, `受信フォルダ (${folderConfig.inputFolder}) へ手動追加されました。`);
+      addLog('info', file.name, `ドロップ受付: 自動画像解析・分類処理を開始します。`);
     }
 
     setDocuments((prev) => [...newDocs, ...prev]);
@@ -276,7 +306,7 @@ export default function App() {
     };
 
     setDocuments((prev) => [newDoc, ...prev]);
-    addLog('info', fileName, `テスト用FAX PDFが受信フォルダへ生成・追加されました。`);
+    addLog('info', fileName, `テスト用FAX PDFがドロップリストに追加されました。`);
   };
 
   const handleForceCategoryChange = (docId: string, category: '注文書' | '在庫確認' | '対象外') => {
@@ -309,8 +339,6 @@ export default function App() {
     <div className="min-h-screen bg-slate-100 text-slate-800 font-sans antialiased flex flex-col">
       {/* Top Header */}
       <Header
-        isMonitoring={isMonitoring}
-        onToggleMonitoring={() => setIsMonitoring(!isMonitoring)}
         onRunBatch={handleRunBatch}
         onOpenPythonGuide={() => setIsPythonGuideOpen(true)}
         onGenerateSamples={() => setIsSampleGenOpen(true)}
@@ -336,7 +364,7 @@ export default function App() {
 
           <div className="p-4 bg-white rounded-2xl border border-blue-100 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-xs font-bold text-blue-600 block">注文書 (● 検出)</span>
+              <span className="text-xs font-bold text-blue-600 block">注文書 (■ 検出)</span>
               <span className="text-2xl font-black text-blue-700 font-mono mt-0.5 block">
                 {poCount} <span className="text-xs font-normal text-blue-400">件</span>
               </span>
@@ -348,7 +376,7 @@ export default function App() {
 
           <div className="p-4 bg-white rounded-2xl border border-emerald-100 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-xs font-bold text-emerald-600 block">在庫確認 (■ 検出)</span>
+              <span className="text-xs font-bold text-emerald-600 block">在庫確認 (● 検出)</span>
               <span className="text-2xl font-black text-emerald-700 font-mono mt-0.5 block">
                 {invCount} <span className="text-xs font-normal text-emerald-400">件</span>
               </span>

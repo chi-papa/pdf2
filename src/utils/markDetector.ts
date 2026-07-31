@@ -1,12 +1,12 @@
 import { CornerDetail, DetectionSettings, MarkType, PageAnalysis } from '../types';
 
 export const DEFAULT_DETECTION_SETTINGS: DetectionSettings = {
-  cornerMarginPercent: 15, // 15% from edge
-  darkThreshold: 120, // threshold for black pixels
-  minMarkSizePx: 12, // minimum size in pixels
-  maxMarkSizePx: 150, // maximum size in pixels
-  circularityThreshold: 0.75, // circle threshold
-  squareExtentThreshold: 0.80, // square fill threshold
+  cornerMarginPercent: 18, // 18% from edge for better coverage
+  darkThreshold: 140, // slightly higher luminance threshold to capture faint FAX pixels
+  minMarkSizePx: 5, // lowered minimum mark size from 12 to 5 to capture smaller ■ marks
+  maxMarkSizePx: 180, // maximum size in pixels
+  circularityThreshold: 0.70, // circle threshold
+  squareExtentThreshold: 0.70, // lowered square extent threshold from 0.80 to 0.70 for imperfect square marks
 };
 
 /**
@@ -66,14 +66,20 @@ export function analyzeCanvasPage(
     };
   });
 
-  // Category decision for page
-  const circleCount = corners.filter((c) => c.detectedMark === 'circle').length;
+  // Category decision for page: flexible threshold (at least 2 marks anywhere in the 4 corners for FAX orientation invariance)
+  // 注文書 = 黒四角「■」, 在庫確認 = 黒丸「●」
   const squareCount = corners.filter((c) => c.detectedMark === 'square').length;
+  const circleCount = corners.filter((c) => c.detectedMark === 'circle').length;
 
   let detectedCategory: '注文書' | '在庫確認' | '対象外' = '対象外';
-  if (circleCount === 4) {
+  
+  if (squareCount >= 2 && squareCount >= circleCount) {
     detectedCategory = '注文書';
-  } else if (squareCount === 4) {
+  } else if (circleCount >= 2 && circleCount > squareCount) {
+    detectedCategory = '在庫確認';
+  } else if (squareCount === 1 && circleCount === 0) {
+    detectedCategory = '注文書';
+  } else if (circleCount === 1 && squareCount === 0) {
     detectedCategory = '在庫確認';
   }
 
@@ -227,15 +233,18 @@ function detectMarkInImageData(
     let type: MarkType = 'none';
     let conf = 0;
 
-    // Circle evaluation: high circularity (> 0.70), extent near ~0.785, aspect ratio near 1.0
-    if (circularity >= settings.circularityThreshold && aspectRatio >= 0.70 && extent >= 0.65 && extent <= 0.88) {
-      type = 'circle';
-      conf = Math.min(99, Math.round(circularity * 60 + extent * 40));
-    }
-    // Square evaluation: extent >= 0.80 (box filled), aspect ratio >= 0.75, circularity lower (~0.75)
-    else if (extent >= settings.squareExtentThreshold && aspectRatio >= 0.75) {
+    // Square evaluation: high extent (box filled >= squareExtentThreshold), square-like aspect ratio (>= 0.60)
+    if (extent >= settings.squareExtentThreshold && aspectRatio >= 0.60 && extent >= 0.72) {
       type = 'square';
-      conf = Math.min(99, Math.round(extent * 70 + aspectRatio * 30));
+      conf = Math.min(99, Math.round(extent * 60 + aspectRatio * 40));
+    }
+    // Circle evaluation: circularity >= threshold or moderate extent (~0.55-0.82) with aspect ratio >= 0.60
+    else if (
+      (circularity >= settings.circularityThreshold || (extent >= 0.55 && extent <= 0.82)) &&
+      aspectRatio >= 0.60
+    ) {
+      type = 'circle';
+      conf = Math.min(99, Math.round(circularity * 50 + extent * 50));
     }
 
     if (conf > bestConfidence) {

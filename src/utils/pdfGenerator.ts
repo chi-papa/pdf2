@@ -42,12 +42,12 @@ export async function createSampleFaxPdf(options: SamplePdfOptions): Promise<Uin
     const page = pdfDoc.addPage([595.28, 841.89]); // A4 Size standard in pt
     const { width, height } = page.getSize();
 
-    // Draw document border / frame
+    // Draw document border / frame (inset to avoid touching corner marks)
     page.drawRectangle({
-      x: 30,
-      y: 30,
-      width: width - 60,
-      height: height - 60,
+      x: 55,
+      y: 55,
+      width: width - 110,
+      height: height - 110,
       borderWidth: 1,
       borderColor: rgb(0.2, 0.2, 0.2),
     });
@@ -151,31 +151,14 @@ export async function createSampleFaxPdf(options: SamplePdfOptions): Promise<Uin
       color: rgb(0.5, 0.5, 0.5),
     });
 
-    // NOW DRAW CORNER MARKS (● or ■) if type is '注文書' or '在庫確認'
+    // NOW DRAW CORNER MARKS: 注文書 = ■ (Square), 在庫確認 = ● (Circle)
     // Corner Mark Position margins: 40pt from corner edges
     const margin = 40;
     const markRadius = 10; // 20pt diameter mark
     const markSquareSize = 20;
 
     if (options.type === '注文書') {
-      // Draw Black Circles "●" in all 4 corners
-      const corners = [
-        { x: margin, y: height - margin }, // Top-Left
-        { x: width - margin, y: height - margin }, // Top-Right
-        { x: margin, y: margin }, // Bottom-Left
-        { x: width - margin, y: margin }, // Bottom-Right
-      ];
-
-      corners.forEach((c) => {
-        page.drawCircle({
-          x: c.x,
-          y: c.y,
-          size: markRadius,
-          color: rgb(0, 0, 0),
-        });
-      });
-    } else if (options.type === '在庫確認') {
-      // Draw Black Squares "■" in all 4 corners
+      // 注文書 = 黒四角 "■" in 4 corners
       const corners = [
         { x: margin - markSquareSize / 2, y: height - margin - markSquareSize / 2 }, // Top-Left
         { x: width - margin - markSquareSize / 2, y: height - margin - markSquareSize / 2 }, // Top-Right
@@ -189,6 +172,23 @@ export async function createSampleFaxPdf(options: SamplePdfOptions): Promise<Uin
           y: c.y,
           width: markSquareSize,
           height: markSquareSize,
+          color: rgb(0, 0, 0),
+        });
+      });
+    } else if (options.type === '在庫確認') {
+      // 在庫確認 = 黒丸 "●" in 4 corners
+      const corners = [
+        { x: margin, y: height - margin }, // Top-Left
+        { x: width - margin, y: height - margin }, // Top-Right
+        { x: margin, y: margin }, // Bottom-Left
+        { x: width - margin, y: margin }, // Bottom-Right
+      ];
+
+      corners.forEach((c) => {
+        page.drawCircle({
+          x: c.x,
+          y: c.y,
+          size: markRadius,
           color: rgb(0, 0, 0),
         });
       });

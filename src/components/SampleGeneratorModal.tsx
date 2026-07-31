@@ -110,7 +110,7 @@ export const SampleGeneratorModal: React.FC<SampleGeneratorModalProps> = ({
             <div>
               <span className="font-bold block">ワンクリック標準テストセット生成</span>
               <span className="text-[11px] text-indigo-700">
-                「注文書(●)」「在庫確認(■)」「対象外(なし)」の3種類をまとめて生成
+                「注文書(■)」「在庫確認(●)」「対象外(なし)」の3種類をまとめて生成
               </span>
             </div>
             <button
@@ -141,7 +141,7 @@ export const SampleGeneratorModal: React.FC<SampleGeneratorModalProps> = ({
                     : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
-                ● 注文書
+                ■ 注文書
               </button>
 
               <button
@@ -153,7 +153,7 @@ export const SampleGeneratorModal: React.FC<SampleGeneratorModalProps> = ({
                     : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
-                ■ 在庫確認
+                ● 在庫確認
               </button>
 
               <button
@@ -218,9 +218,9 @@ export const SampleGeneratorModal: React.FC<SampleGeneratorModalProps> = ({
           <button
             onClick={handleCreateCustom}
             disabled={isGenerating}
-            className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xs transition-all shadow-md shadow-blue-600/20 flex items-center space-x-1.5"
+            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-lg text-xs transition-all shadow-sm flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
           >
-            {isGenerating && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+            {isGenerating && <RefreshCw className="w-3.5 h-3.5 animate-spin text-white" />}
             <span>PDF生成して追加</span>
           </button>
         </div>

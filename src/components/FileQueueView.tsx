@@ -91,26 +91,26 @@ export const FileQueueView: React.FC<FileQueueViewProps> = ({
         onDrop={handleDrop}
         className={`p-6 rounded-2xl border-2 border-dashed transition-all text-center relative overflow-hidden ${
           isDragOver
-            ? 'border-indigo-500 bg-indigo-50/50 scale-[1.005]'
-            : 'border-slate-300 bg-white hover:border-slate-400 shadow-sm'
+            ? 'border-blue-500 bg-blue-50/70 scale-[1.005]'
+            : 'border-slate-300 bg-slate-50/60 hover:bg-blue-50/20 hover:border-blue-400 shadow-xs'
         }`}
       >
         <div className="max-w-md mx-auto space-y-3">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mx-auto text-indigo-600 shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center mx-auto text-blue-600 shadow-xs">
             <Upload className="w-6 h-6 animate-bounce" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-slate-800">
+            <h3 className="text-base font-bold text-slate-900">
               FAX PDFファイルをここにドラッグ＆ドロップ
             </h3>
-            <p className="text-xs text-slate-500 mt-1">
-              またはパソコンからPDFファイルを選択して受信フォルダへ追加
+            <p className="text-xs text-slate-600 mt-1">
+              ファイルをドロップすると、即座に四隅マーク（注文書■ / 在庫確認●）が画像解析・自動仕分けされます
             </p>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            <label className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs cursor-pointer shadow-md shadow-indigo-600/20 transition-all flex items-center space-x-1.5">
-              <Upload className="w-3.5 h-3.5" />
+            <label className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs cursor-pointer shadow-sm transition-all flex items-center space-x-1.5">
+              <Upload className="w-3.5 h-3.5 text-blue-100" />
               <span>ファイルを選択...</span>
               <input
                 type="file"
@@ -123,10 +123,10 @@ export const FileQueueView: React.FC<FileQueueViewProps> = ({
 
             <button
               onClick={onGenerateSampleFiles}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-slate-900 to-indigo-950 hover:from-slate-800 hover:to-indigo-900 text-cyan-300 font-semibold text-xs border border-cyan-500/30 shadow-sm transition-all flex items-center space-x-1.5"
+              className="px-4 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs border border-indigo-200 shadow-xs transition-all flex items-center space-x-1.5 cursor-pointer"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>ワンクリックでテスト用FAXサンプル生成 (●/■)</span>
+              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+              <span>ワンクリックでテスト用FAXサンプル生成 (■/●)</span>
             </button>
           </div>
         </div>
@@ -160,8 +160,8 @@ export const FileQueueView: React.FC<FileQueueViewProps> = ({
                   : 'bg-white border border-slate-200 text-blue-700 hover:bg-blue-50'
               }`}
             >
-              <span className="w-2 h-2 rounded-full bg-blue-400 inline-block" />
-              <span>注文書 (●)</span>
+              <span className="w-2 h-2 rounded-xs bg-blue-400 inline-block" />
+              <span>注文書 (■)</span>
               <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-blue-100 text-blue-800 font-bold">
                 {counts.purchaseOrder}
               </span>
@@ -175,8 +175,8 @@ export const FileQueueView: React.FC<FileQueueViewProps> = ({
                   : 'bg-white border border-slate-200 text-emerald-700 hover:bg-emerald-50'
               }`}
             >
-              <span className="w-2 h-2 bg-emerald-400 inline-block" />
-              <span>在庫確認 (■)</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+              <span>在庫確認 (●)</span>
               <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-bold">
                 {counts.inventory}
               </span>
@@ -263,13 +263,13 @@ export const FileQueueView: React.FC<FileQueueViewProps> = ({
                             ? 'bg-blue-600 text-white'
                             : doc.category === '在庫確認'
                             ? 'bg-emerald-600 text-white'
-                            : 'bg-slate-200 text-slate-700'
+                            : 'bg-amber-100 text-amber-800 border border-amber-200'
                         }`}
                       >
                         {doc.category === '注文書'
-                          ? '● 注文書 (4個マーク一致)'
+                          ? '■ 注文書 (4個マーク一致)'
                           : doc.category === '在庫確認'
-                          ? '■ 在庫確認 (4個マーク一致)'
+                          ? '● 在庫確認 (4個マーク一致)'
                           : '対象外 (マークなし)'}
                       </span>
 

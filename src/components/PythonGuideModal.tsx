@@ -98,12 +98,12 @@ class FaxMarkDetector:
             elif mark == "square":
                 square_count += 1
 
-        if circle_count == 4:
-            return "注文書", "四隅に●黒丸 4/4 検出"
-        elif square_count == 4:
-            return "在庫確認", "四隅に■黒四角 4/4 検出"
+        if square_count >= 2:
+            return "注文書", f"四隅に■黒四角 {square_count}個 検出"
+        elif circle_count >= 2:
+            return "在庫確認", f"四隅に●黒丸 {circle_count}個 検出"
 
-        return "対象外", f"●={circle_count}, ■={square_count}"
+        return "対象外", f"■={square_count}, ●={circle_count}"
 
     def detect_shape_in_crop(self, crop_img):
         """切り出し画像内の黒色物体から円形度・矩形充填度を計算して形状識別"""
@@ -465,28 +465,24 @@ if __name__ == "__main__":
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-2">
                   <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">
-                    1. 注文書 判定条件 (● 黒丸 4個)
+                    1. 注文書 判定条件 (■ 黒四角 2箇所以上)
                   </span>
                   <ul className="list-disc list-inside space-y-1 text-slate-600 text-[11px]">
-                    <li>四隅領域（TL, TR, BL, BR）全てに●が存在すること</li>
-                    <li>
-                      真円度 Circularity = (4 × π × 面積) / 周長² ≥ 0.72
-                    </li>
-                    <li>外接矩形のアスペクト比 ≥ 0.70（縦横が概ね均等）</li>
-                    <li>複数ページPDFの場合、1ページでも一致すれば対象とする</li>
+                    <li>四隅領域（TL, TR, BL, BR）のうち2箇所以上に■が存在すること</li>
+                    <li>FAX送信の向き（回転・逆さ）に関わらず確実に自動判別</li>
+                    <li>矩形充填度 Extent = 面積 / (幅 × 高さ) ≥ 0.70（正方形）</li>
+                    <li>外接矩形のアスペクト比 ≥ 0.60</li>
                   </ul>
                 </div>
 
                 <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-2">
                   <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                    2. 在庫確認書類 判定条件 (■ 黒四角 4個)
+                    2. 在庫確認書類 判定条件 (● 黒丸 2箇所以上)
                   </span>
                   <ul className="list-disc list-inside space-y-1 text-slate-600 text-[11px]">
-                    <li>四隅領域（TL, TR, BL, BR）全てに■が存在すること</li>
-                    <li>
-                      矩形充填度 Extent = 面積 / (幅 × 高さ) ≥ 0.80（中身が詰まった正方形）
-                    </li>
-                    <li>外接矩形のアスペクト比 ≥ 0.75</li>
+                    <li>四隅領域（TL, TR, BL, BR）のうち2箇所以上に●が存在すること</li>
+                    <li>真円度 Circularity = (4 × π × 面積) / 周長² ≥ 0.70</li>
+                    <li>外接矩形のアスペクト比 ≥ 0.60（縦横が概ね均等）</li>
                     <li>対象外FAX（どちらのマークも揃わない）はスルー</li>
                   </ul>
                 </div>
@@ -573,9 +569,9 @@ if __name__ == "__main__":
 
                   <button
                     onClick={downloadPythonScript}
-                    className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center space-x-1 shadow-sm shadow-indigo-600/20"
+                    className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs flex items-center space-x-1 border border-slate-700 shadow-xs"
                   >
-                    <Download className="w-3.5 h-3.5" />
+                    <Download className="w-3.5 h-3.5 text-slate-300" />
                     <span>`fax_auto_sorter_gui.py` をダウンロード</span>
                   </button>
                 </div>
@@ -599,14 +595,14 @@ if __name__ == "__main__":
           <div className="flex space-x-3">
             <button
               onClick={downloadPythonScript}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-xs transition-all shadow-md shadow-indigo-600/20 flex items-center space-x-1.5"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-lg text-xs transition-all shadow-sm flex items-center space-x-1.5 cursor-pointer"
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-4 h-4 text-white" />
               <span>PythonファイルをPCへダウンロード</span>
             </button>
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-lg text-xs transition-all"
+              className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold rounded-lg text-xs transition-all"
             >
               閉じる
             </button>

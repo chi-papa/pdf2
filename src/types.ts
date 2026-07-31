@@ -40,12 +40,10 @@ export interface FaxDocument {
 }
 
 export interface FolderConfig {
-  inputFolder: string;
   purchaseOrderFolder: string;
   inventoryFolder: string;
   unclassifiedFolder: string;
-  autoDeleteOriginal: boolean;
-  createUnclassifiedSubfolder: boolean;
+  autoDeleteOriginal?: boolean;
 }
 
 export interface DetectionSettings {

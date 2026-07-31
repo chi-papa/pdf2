@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Terminal, Download, Trash2, Search, Filter, CheckCircle2, AlertTriangle, Info, XCircle } from 'lucide-react';
+import { Terminal, Trash2, Search, Filter, CheckCircle2, AlertTriangle, Info, XCircle } from 'lucide-react';
 import { ProcessingLog } from '../types';
 
 interface LogConsoleProps {
@@ -18,27 +18,6 @@ export const LogConsole: React.FC<LogConsoleProps> = ({ logs, onClearLogs }) => 
       log.message.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesLevel && matchesQuery;
   });
-
-  const exportLogsCsv = () => {
-    const headers = ['ID', 'Timestamp', 'Level', 'FileName', 'Category', 'Message'];
-    const rows = logs.map((l) => [
-      l.id,
-      l.timestamp,
-      l.level,
-      `"${l.fileName}"`,
-      l.category || '',
-      `"${l.message.replace(/"/g, '""')}"`,
-    ]);
-
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `fax_sorting_logs_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   const getLevelBadge = (level: ProcessingLog['level']) => {
     switch (level) {
@@ -97,15 +76,6 @@ export const LogConsole: React.FC<LogConsoleProps> = ({ logs, onClearLogs }) => 
               className="pl-7 pr-3 py-1 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200 w-36 focus:outline-none focus:border-cyan-500"
             />
           </div>
-
-          <button
-            onClick={exportLogsCsv}
-            disabled={logs.length === 0}
-            className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 text-xs font-semibold flex items-center space-x-1 disabled:opacity-40 transition-all"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>CSV出力</span>
-          </button>
 
           <button
             onClick={onClearLogs}
