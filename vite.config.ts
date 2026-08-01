@@ -13,7 +13,7 @@ export default defineConfig(() => {
       },
     },
     build: {
-      target: 'esnext',
+      target: 'es2022',
       outDir: 'dist',
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
