@@ -3,8 +3,16 @@ import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { analyzeCanvasPage } from './markDetector';
 import { DetectionSettings, PageAnalysis } from '../types';
 
-// Set worker source to Vite bundled asset URL
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+function initWorker() {
+  if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+    try {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+    } catch (e) {
+      console.warn('Fallback to CDN pdf worker:', e);
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version || '4.10.38'}/build/pdf.worker.min.mjs`;
+    }
+  }
+}
 
 /**
  * Renders each page of a PDF buffer onto an HTML Canvas and performs corner mark detection.
@@ -14,6 +22,8 @@ export async function processPdfDocument(
   settings?: DetectionSettings
 ): Promise<PageAnalysis[]> {
   try {
+    initWorker();
+
     if (!pdfInput) {
       throw new Error('PDFデータが存在しません');
     }
