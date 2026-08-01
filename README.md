@@ -46,8 +46,11 @@ npm run preview
 
 ## GitHub Pages へのデプロイ手順 (Deploy to GitHub Pages)
 
-### GitHub Actions を使用する場合 (推奨)
-リポジトリの `.github/workflows/deploy.yml` を作成することで、`main` ブランチへ push 時に自動デプロイできます。
+### GitHub Pages へのデプロイ設定手順 (GitHub Actions)
+
+1. リポジトリの **Settings** > **Pages** に移動します。
+2. **Build and deployment** の **Source** を **`GitHub Actions`** に設定します。（デフォルトの「Deploy from a branch」のままだとエラーになる場合があります）
+3. `main` ブランチにコードを Push すると、`.github/workflows/deploy.yml` により自動的にビルドおよびデプロイが行われます。
 
 ```yaml
 name: Deploy to GitHub Pages
