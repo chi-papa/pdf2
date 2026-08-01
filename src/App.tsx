@@ -36,8 +36,11 @@ export default function App() {
     }
     return {
       purchaseOrderFolder: 'C:\\FAX_Sorted\\注文書',
+      purchaseOrderEnabled: true,
       inventoryFolder: 'C:\\FAX_Sorted\\在庫確認',
+      inventoryEnabled: true,
       unclassifiedFolder: 'C:\\FAX_Sorted\\対象外',
+      unclassifiedEnabled: true,
       autoDeleteOriginal: false,
     };
   });
@@ -186,13 +189,19 @@ export default function App() {
         }
 
         // Determine destination folder
-        let destPath = folderConfig.unclassifiedFolder;
+        let destPath = '(保存しない / スキップ)';
         if (matchedCategory === '注文書') {
-          destPath = `${folderConfig.purchaseOrderFolder}/${doc.fileName}`;
+          if (folderConfig.purchaseOrderEnabled !== false) {
+            destPath = `${folderConfig.purchaseOrderFolder}/${doc.fileName}`;
+          }
         } else if (matchedCategory === '在庫確認') {
-          destPath = `${folderConfig.inventoryFolder}/${doc.fileName}`;
+          if (folderConfig.inventoryEnabled !== false) {
+            destPath = `${folderConfig.inventoryFolder}/${doc.fileName}`;
+          }
         } else {
-          destPath = `${folderConfig.unclassifiedFolder}/${doc.fileName}`;
+          if (folderConfig.unclassifiedEnabled !== false) {
+            destPath = `${folderConfig.unclassifiedFolder}/${doc.fileName}`;
+          }
         }
 
         // Update document record
@@ -213,24 +222,33 @@ export default function App() {
         );
 
         if (matchedCategory === '注文書') {
+          const isSave = folderConfig.purchaseOrderEnabled !== false;
           addLog(
             'success',
             doc.fileName,
-            `四隅■(黒四角)を検出。注文書として ${folderConfig.purchaseOrderFolder} へ分類保存しました。`,
+            isSave
+              ? `四隅■(黒四角)を検出。注文書として ${folderConfig.purchaseOrderFolder} へ分類保存しました。`
+              : `四隅■(黒四角)を検出。注文書として分類（※保存設定: 保存しない）。`,
             '注文書'
           );
         } else if (matchedCategory === '在庫確認') {
+          const isSave = folderConfig.inventoryEnabled !== false;
           addLog(
             'success',
             doc.fileName,
-            `四隅●(黒丸)を検出。在庫確認として ${folderConfig.inventoryFolder} へ分類保存しました。`,
+            isSave
+              ? `四隅●(黒丸)を検出。在庫確認として ${folderConfig.inventoryFolder} へ分類保存しました。`
+              : `四隅●(黒丸)を検出。在庫確認として分類（※保存設定: 保存しない）。`,
             '在庫確認'
           );
         } else {
+          const isSave = folderConfig.unclassifiedEnabled !== false;
           addLog(
             'warning',
             doc.fileName,
-            `四隅マーク不一致。対象外(${folderConfig.unclassifiedFolder})として整理されました。`,
+            isSave
+              ? `四隅マーク不一致。対象外(${folderConfig.unclassifiedFolder})として整理されました。`
+              : `四隅マーク不一致。対象外として分類（※保存設定: 保存しない）。`,
             '対象外'
           );
         }
@@ -315,9 +333,14 @@ export default function App() {
     setDocuments((prev) =>
       prev.map((d) => {
         if (d.id === docId) {
-          let dest = folderConfig.unclassifiedFolder;
-          if (category === '注文書') dest = `${folderConfig.purchaseOrderFolder}/${d.fileName}`;
-          if (category === '在庫確認') dest = `${folderConfig.inventoryFolder}/${d.fileName}`;
+          let dest = '(保存しない / スキップ)';
+          if (category === '注文書' && folderConfig.purchaseOrderEnabled !== false) {
+            dest = `${folderConfig.purchaseOrderFolder}/${d.fileName}`;
+          } else if (category === '在庫確認' && folderConfig.inventoryEnabled !== false) {
+            dest = `${folderConfig.inventoryFolder}/${d.fileName}`;
+          } else if (category === '対象外' && folderConfig.unclassifiedEnabled !== false) {
+            dest = `${folderConfig.unclassifiedFolder}/${d.fileName}`;
+          }
 
           return { ...d, category, destinationPath: dest, status: 'sorted' };
         }

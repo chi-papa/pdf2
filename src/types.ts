@@ -42,8 +42,11 @@ export interface FaxDocument {
 
 export interface FolderConfig {
   purchaseOrderFolder: string;
+  purchaseOrderEnabled?: boolean; // false の場合「保存しない」
   inventoryFolder: string;
+  inventoryEnabled?: boolean;     // false の場合「保存しない」
   unclassifiedFolder: string;
+  unclassifiedEnabled?: boolean;  // false の場合「保存しない」
   autoDeleteOriginal?: boolean;
 }
 

@@ -319,29 +319,31 @@ export const FolderConfigPanel: React.FC<FolderConfigPanelProps> = ({
       {/* Expanded Config Content */}
       {isOpen && (
         <div className="p-5 sm:p-6 space-y-6">
-          {/* Sub Navigation Tabs */}
-          <div className="flex border-b border-slate-200 space-x-6 text-sm font-medium">
+          {/* Sub Navigation Buttons */}
+          <div className="p-1.5 bg-slate-100 rounded-2xl inline-flex flex-wrap gap-2 border border-slate-200/80">
             <button
+              type="button"
               onClick={() => setActiveTab('folders')}
-              className={`pb-3 border-b-2 font-semibold transition-all flex items-center space-x-2 cursor-pointer ${
+              className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center space-x-2 cursor-pointer ${
                 activeTab === 'folders'
-                  ? 'border-blue-600 text-blue-700'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/25 ring-2 ring-blue-600/20'
+                  : 'bg-white text-slate-700 border border-slate-200/90 hover:border-blue-400 hover:bg-blue-50/60 hover:text-blue-700 shadow-xs'
               }`}
             >
-              <Folder className="w-4 h-4" />
+              <Folder className={`w-4 h-4 ${activeTab === 'folders' ? 'text-white' : 'text-blue-600'}`} />
               <span>保存先フォルダ設定</span>
             </button>
 
             <button
+              type="button"
               onClick={() => setActiveTab('detection')}
-              className={`pb-3 border-b-2 font-semibold transition-all flex items-center space-x-2 cursor-pointer ${
+              className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center space-x-2 cursor-pointer ${
                 activeTab === 'detection'
-                  ? 'border-blue-600 text-blue-700'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/25 ring-2 ring-blue-600/20'
+                  : 'bg-white text-slate-700 border border-slate-200/90 hover:border-blue-400 hover:bg-blue-50/60 hover:text-blue-700 shadow-xs'
               }`}
             >
-              <SlidersHorizontal className="w-4 h-4" />
+              <SlidersHorizontal className={`w-4 h-4 ${activeTab === 'detection' ? 'text-white' : 'text-blue-600'}`} />
               <span>マーク検出調整 (PCリアルタイム検証)</span>
             </button>
           </div>
@@ -358,72 +360,186 @@ export const FolderConfigPanel: React.FC<FolderConfigPanelProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
                 {/* Purchase Order Folder */}
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                  <label className="block font-bold text-slate-800 mb-1 flex items-center space-x-1.5">
-                    <Square className="w-4 h-4 text-blue-600 fill-blue-600" />
-                    <span>■ 注文書 保存先フォルダ</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={folderConfig.purchaseOrderFolder || ''}
-                    onChange={(e) =>
-                      onUpdateFolderConfig({
-                        ...folderConfig,
-                        purchaseOrderFolder: e.target.value,
-                      })
-                    }
-                    placeholder="例: C:\FAX_Sorted\注文書"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                  />
-                  <p className="text-[11px] text-slate-500 mt-1.5">
-                    四隅に黒四角「■」が検出された注文書PDFの保存先。
-                  </p>
+                <div
+                  className={`p-4 rounded-xl border transition-all ${
+                    folderConfig.purchaseOrderEnabled !== false
+                      ? 'bg-slate-50 border-slate-200'
+                      : 'bg-slate-100 border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="font-bold text-slate-800 flex items-center space-x-1.5 cursor-pointer">
+                      <Square className="w-4 h-4 text-blue-600 fill-blue-600 shrink-0" />
+                      <span>■ 注文書 保存先</span>
+                    </label>
+                    <label className="flex items-center space-x-1.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={folderConfig.purchaseOrderEnabled !== false}
+                        onChange={(e) =>
+                          onUpdateFolderConfig({
+                            ...folderConfig,
+                            purchaseOrderEnabled: e.target.checked,
+                          })
+                        }
+                        className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+                      />
+                      <span
+                        className={`font-bold text-xs ${
+                          folderConfig.purchaseOrderEnabled !== false ? 'text-blue-700' : 'text-slate-500'
+                        }`}
+                      >
+                        {folderConfig.purchaseOrderEnabled !== false ? '保存する' : '保存しない'}
+                      </span>
+                    </label>
+                  </div>
+
+                  {folderConfig.purchaseOrderEnabled !== false ? (
+                    <>
+                      <input
+                        type="text"
+                        value={folderConfig.purchaseOrderFolder || ''}
+                        onChange={(e) =>
+                          onUpdateFolderConfig({
+                            ...folderConfig,
+                            purchaseOrderFolder: e.target.value,
+                          })
+                        }
+                        placeholder="例: C:\FAX_Sorted\注文書"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                      />
+                      <p className="text-[11px] text-slate-500 mt-1.5">
+                        四隅に黒四角「■」が検出された注文書PDFの保存先。
+                      </p>
+                    </>
+                  ) : (
+                    <div className="p-2.5 bg-amber-50/80 border border-amber-200/90 rounded-lg text-amber-900 text-[11px] flex items-center space-x-1.5">
+                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>保存不要 (検出後もフォルダへ移動・保存せずスキップします)</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Inventory Check Folder */}
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                  <label className="block font-bold text-slate-800 mb-1 flex items-center space-x-1.5">
-                    <Circle className="w-4 h-4 text-emerald-600 fill-emerald-600" />
-                    <span>● 在庫確認 保存先フォルダ</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={folderConfig.inventoryFolder || ''}
-                    onChange={(e) =>
-                      onUpdateFolderConfig({
-                        ...folderConfig,
-                        inventoryFolder: e.target.value,
-                      })
-                    }
-                    placeholder="例: C:\FAX_Sorted\在庫確認"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                  />
-                  <p className="text-[11px] text-slate-500 mt-1.5">
-                    四隅に黒丸「●」が検出された在庫確認PDFの保存先。
-                  </p>
+                <div
+                  className={`p-4 rounded-xl border transition-all ${
+                    folderConfig.inventoryEnabled !== false
+                      ? 'bg-slate-50 border-slate-200'
+                      : 'bg-slate-100 border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="font-bold text-slate-800 flex items-center space-x-1.5 cursor-pointer">
+                      <Circle className="w-4 h-4 text-emerald-600 fill-emerald-600 shrink-0" />
+                      <span>● 在庫確認 保存先</span>
+                    </label>
+                    <label className="flex items-center space-x-1.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={folderConfig.inventoryEnabled !== false}
+                        onChange={(e) =>
+                          onUpdateFolderConfig({
+                            ...folderConfig,
+                            inventoryEnabled: e.target.checked,
+                          })
+                        }
+                        className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                      />
+                      <span
+                        className={`font-bold text-xs ${
+                          folderConfig.inventoryEnabled !== false ? 'text-emerald-700' : 'text-slate-500'
+                        }`}
+                      >
+                        {folderConfig.inventoryEnabled !== false ? '保存する' : '保存しない'}
+                      </span>
+                    </label>
+                  </div>
+
+                  {folderConfig.inventoryEnabled !== false ? (
+                    <>
+                      <input
+                        type="text"
+                        value={folderConfig.inventoryFolder || ''}
+                        onChange={(e) =>
+                          onUpdateFolderConfig({
+                            ...folderConfig,
+                            inventoryFolder: e.target.value,
+                          })
+                        }
+                        placeholder="例: C:\FAX_Sorted\在庫確認"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                      />
+                      <p className="text-[11px] text-slate-500 mt-1.5">
+                        四隅に黒丸「●」が検出された在庫確認PDFの保存先。
+                      </p>
+                    </>
+                  ) : (
+                    <div className="p-2.5 bg-amber-50/80 border border-amber-200/90 rounded-lg text-amber-900 text-[11px] flex items-center space-x-1.5">
+                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>保存不要 (検出後もフォルダへ移動・保存せずスキップします)</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Other/Unmatched Folder */}
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                  <label className="block font-bold text-slate-800 mb-1 flex items-center space-x-1.5">
-                    <HelpCircle className="w-4 h-4 text-amber-600" />
-                    <span>対象外 FAX保存先フォルダ</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={folderConfig.unclassifiedFolder || ''}
-                    onChange={(e) =>
-                      onUpdateFolderConfig({
-                        ...folderConfig,
-                        unclassifiedFolder: e.target.value,
-                      })
-                    }
-                    placeholder="例: C:\FAX_Sorted\手動確認"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                  />
-                  <p className="text-[11px] text-slate-500 mt-1.5">
-                    四隅マークが存在しない一般的な資料の振り分け先。
-                  </p>
+                <div
+                  className={`p-4 rounded-xl border transition-all ${
+                    folderConfig.unclassifiedEnabled !== false
+                      ? 'bg-slate-50 border-slate-200'
+                      : 'bg-slate-100 border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="font-bold text-slate-800 flex items-center space-x-1.5 cursor-pointer">
+                      <HelpCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>対象外 FAX保存先</span>
+                    </label>
+                    <label className="flex items-center space-x-1.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={folderConfig.unclassifiedEnabled !== false}
+                        onChange={(e) =>
+                          onUpdateFolderConfig({
+                            ...folderConfig,
+                            unclassifiedEnabled: e.target.checked,
+                          })
+                        }
+                        className="w-4 h-4 text-amber-600 rounded border-slate-300 focus:ring-amber-500 cursor-pointer"
+                      />
+                      <span
+                        className={`font-bold text-xs ${
+                          folderConfig.unclassifiedEnabled !== false ? 'text-amber-700' : 'text-slate-500'
+                        }`}
+                      >
+                        {folderConfig.unclassifiedEnabled !== false ? '保存する' : '保存しない'}
+                      </span>
+                    </label>
+                  </div>
+
+                  {folderConfig.unclassifiedEnabled !== false ? (
+                    <>
+                      <input
+                        type="text"
+                        value={folderConfig.unclassifiedFolder || ''}
+                        onChange={(e) =>
+                          onUpdateFolderConfig({
+                            ...folderConfig,
+                            unclassifiedFolder: e.target.value,
+                          })
+                        }
+                        placeholder="例: C:\FAX_Sorted\手動確認"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono text-xs focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white"
+                      />
+                      <p className="text-[11px] text-slate-500 mt-1.5">
+                        四隅マークが存在しない一般的な資料の振り分け先。
+                      </p>
+                    </>
+                  ) : (
+                    <div className="p-2.5 bg-amber-50/80 border border-amber-200/90 rounded-lg text-amber-900 text-[11px] flex items-center space-x-1.5">
+                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>保存不要 (対象外FAXを保存せず破棄・スキップします)</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
