@@ -15,6 +15,16 @@ export default defineConfig(() => {
     build: {
       target: 'esnext',
       outDir: 'dist',
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom'],
+            pdf: ['pdfjs-dist', 'pdf-lib'],
+            lucide: ['lucide-react'],
+          },
+        },
+      },
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
