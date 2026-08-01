@@ -1,10 +1,11 @@
 import React from 'react';
-import { RefreshCw, FileCode, Sparkles, FolderSync } from 'lucide-react';
+import { RefreshCw, FileCode, Sparkles, FolderSync, ShieldCheck } from 'lucide-react';
 
 interface HeaderProps {
   onRunBatch: () => void;
   onOpenPythonGuide: () => void;
   onGenerateSamples: () => void;
+  onOpenFaxFormatGuide: () => void;
   isProcessing: boolean;
   itemCount: number;
 }
@@ -13,6 +14,7 @@ export const Header: React.FC<HeaderProps> = ({
   onRunBatch,
   onOpenPythonGuide,
   onGenerateSamples,
+  onOpenFaxFormatGuide,
   isProcessing,
   itemCount,
 }) => {
@@ -43,6 +45,16 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Action Buttons */}
         <div className="flex items-center space-x-2 sm:space-x-3">
+          {/* FAX Format Recommended Guide */}
+          <button
+            onClick={onOpenFaxFormatGuide}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60 hover:border-emerald-500 transition-all cursor-pointer shadow-2xs"
+            title="認識精度を高めるFAXフォーマット推奨設計規格"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="hidden lg:inline">FAX推奨規格ガイド</span>
+          </button>
+
           {/* Run Batch Processing */}
           {itemCount > 0 && (
             <button

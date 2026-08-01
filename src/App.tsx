@@ -6,6 +6,7 @@ import { InspectionModal } from './components/InspectionModal';
 import { LogConsole } from './components/LogConsole';
 import { PythonGuideModal } from './components/PythonGuideModal';
 import { SampleGeneratorModal } from './components/SampleGeneratorModal';
+import { FaxFormatGuideModal } from './components/FaxFormatGuideModal';
 
 import { DetectionSettings, FaxDocument, FolderConfig, ProcessingLog } from './types';
 import { DEFAULT_DETECTION_SETTINGS } from './utils/markDetector';
@@ -22,6 +23,7 @@ export default function App() {
   const [inspectedDoc, setInspectedDoc] = useState<FaxDocument | null>(null);
   const [isPythonGuideOpen, setIsPythonGuideOpen] = useState(false);
   const [isSampleGenOpen, setIsSampleGenOpen] = useState(false);
+  const [isFaxGuideOpen, setIsFaxGuideOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | '注文書' | '在庫確認' | '対象外'>('all');
 
   // Load saved Configurations from LocalStorage if available
@@ -165,7 +167,7 @@ export default function App() {
       if (!doc.pdfBuffer) return;
 
       try {
-        const pages = await processPdfDocument(doc.pdfBuffer.buffer, detectionSettings);
+        const pages = await processPdfDocument(doc.pdfBuffer, detectionSettings);
 
         // Determine category: if any page is '注文書' or '在庫確認'
         let matchedCategory: '注文書' | '在庫確認' | '対象外' = '対象外';
@@ -342,6 +344,7 @@ export default function App() {
         onRunBatch={handleRunBatch}
         onOpenPythonGuide={() => setIsPythonGuideOpen(true)}
         onGenerateSamples={() => setIsSampleGenOpen(true)}
+        onOpenFaxFormatGuide={() => setIsFaxGuideOpen(true)}
         isProcessing={isProcessing}
         itemCount={documents.length}
       />
@@ -405,6 +408,8 @@ export default function App() {
           onUpdateFolderConfig={setFolderConfig}
           detectionSettings={detectionSettings}
           onUpdateDetectionSettings={setDetectionSettings}
+          documents={documents}
+          onOpenFaxFormatGuide={() => setIsFaxGuideOpen(true)}
         />
 
         {/* File Queue & Management Dashboard */}
@@ -449,6 +454,14 @@ export default function App() {
       <SampleGeneratorModal
         isOpen={isSampleGenOpen}
         onClose={() => setIsSampleGenOpen(false)}
+        onAddSampleToQueue={handleAddSampleToQueue}
+        onOpenFaxFormatGuide={() => setIsFaxGuideOpen(true)}
+      />
+
+      {/* FAX Format Recommended Guide Modal */}
+      <FaxFormatGuideModal
+        isOpen={isFaxGuideOpen}
+        onClose={() => setIsFaxGuideOpen(false)}
         onAddSampleToQueue={handleAddSampleToQueue}
       />
     </div>

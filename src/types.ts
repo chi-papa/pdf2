@@ -11,6 +11,7 @@ export interface CornerDetail {
     blackPixelRatio: number;
   };
   cropDataUrl?: string;
+  binaryCropDataUrl?: string;
 }
 
 export interface PageAnalysis {

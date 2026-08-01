@@ -54,8 +54,23 @@ export function analyzeCanvasPage(
     }
     const cropDataUrl = cropCanvas.toDataURL('image/png');
 
+    // Create binary image for visualization
+    const binaryImgData = cropCtx ? cropCtx.createImageData(cropW, cropH) : null;
+
     // Analyze corner for mark
-    const markAnalysis = detectMarkInImageData(imgData, settings);
+    const markAnalysis = detectMarkInImageData(imgData, settings, binaryImgData);
+
+    let binaryCropDataUrl: string | undefined = undefined;
+    if (binaryImgData && cropCtx) {
+      const binCanvas = document.createElement('canvas');
+      binCanvas.width = cropW;
+      binCanvas.height = cropH;
+      const binCtx = binCanvas.getContext('2d');
+      if (binCtx) {
+        binCtx.putImageData(binaryImgData, 0, 0);
+        binaryCropDataUrl = binCanvas.toDataURL('image/png');
+      }
+    }
 
     return {
       position: cp.pos,
@@ -63,6 +78,7 @@ export function analyzeCanvasPage(
       confidence: markAnalysis.confidence,
       shapeMetric: markAnalysis.metrics,
       cropDataUrl,
+      binaryCropDataUrl,
     };
   });
 
@@ -99,7 +115,8 @@ export function analyzeCanvasPage(
  */
 function detectMarkInImageData(
   imgData: ImageData,
-  settings: DetectionSettings
+  settings: DetectionSettings,
+  outBinaryImgData?: ImageData | null
 ): {
   markType: MarkType;
   confidence: number;
@@ -123,8 +140,22 @@ function detectMarkInImageData(
     if (gray < settings.darkThreshold) {
       binaryMap[i] = 1;
       blackPixelCount++;
+      if (outBinaryImgData) {
+        // Black pixel in binary visualization
+        outBinaryImgData.data[idx] = 15;
+        outBinaryImgData.data[idx + 1] = 23;
+        outBinaryImgData.data[idx + 2] = 42;
+        outBinaryImgData.data[idx + 3] = 255;
+      }
     } else {
       binaryMap[i] = 0;
+      if (outBinaryImgData) {
+        // White pixel in binary visualization
+        outBinaryImgData.data[idx] = 248;
+        outBinaryImgData.data[idx + 1] = 250;
+        outBinaryImgData.data[idx + 2] = 252;
+        outBinaryImgData.data[idx + 3] = 255;
+      }
     }
   }
 

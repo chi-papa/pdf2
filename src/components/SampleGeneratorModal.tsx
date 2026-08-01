@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { X, Sparkles, FileText, CheckCircle2, RefreshCw } from 'lucide-react';
+import { X, Sparkles, FileText, CheckCircle2, RefreshCw, ShieldCheck } from 'lucide-react';
 import { createSampleFaxPdf } from '../utils/pdfGenerator';
 
 interface SampleGeneratorModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddSampleToQueue: (fileName: string, pdfBuffer: Uint8Array) => void;
+  onOpenFaxFormatGuide?: () => void;
 }
 
 export const SampleGeneratorModal: React.FC<SampleGeneratorModalProps> = ({
   isOpen,
   onClose,
   onAddSampleToQueue,
+  onOpenFaxFormatGuide,
 }) => {
   const [docType, setDocType] = useState<'注文書' | '在庫確認' | '対象外'>('注文書');
   const [pageCount, setPageCount] = useState<number>(1);
@@ -207,22 +209,40 @@ export const SampleGeneratorModal: React.FC<SampleGeneratorModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex justify-end space-x-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-lg text-xs"
-          >
-            キャンセル
-          </button>
+        <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+          {onOpenFaxFormatGuide ? (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenFaxFormatGuide();
+              }}
+              className="text-xs text-emerald-700 hover:text-emerald-900 font-bold flex items-center space-x-1"
+            >
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <span>FAX印字推奨規格ガイドを見る</span>
+            </button>
+          ) : (
+            <div />
+          )}
 
-          <button
-            onClick={handleCreateCustom}
-            disabled={isGenerating}
-            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-lg text-xs transition-all shadow-sm flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
-          >
-            {isGenerating && <RefreshCw className="w-3.5 h-3.5 animate-spin text-white" />}
-            <span>PDF生成して追加</span>
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-lg text-xs"
+            >
+              キャンセル
+            </button>
+
+            <button
+              onClick={handleCreateCustom}
+              disabled={isGenerating}
+              className="px-5 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-lg text-xs transition-all shadow-sm flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
+            >
+              {isGenerating && <RefreshCw className="w-3.5 h-3.5 animate-spin text-white" />}
+              <span>PDF生成して追加</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

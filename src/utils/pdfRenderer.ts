@@ -10,12 +10,35 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
  * Renders each page of a PDF buffer onto an HTML Canvas and performs corner mark detection.
  */
 export async function processPdfDocument(
-  pdfBuffer: ArrayBuffer,
+  pdfInput: ArrayBuffer | Uint8Array,
   settings?: DetectionSettings
 ): Promise<PageAnalysis[]> {
   try {
+    if (!pdfInput) {
+      throw new Error('PDFデータが存在しません');
+    }
+
+    let inputBytes: Uint8Array;
+    if (pdfInput instanceof Uint8Array) {
+      if (!pdfInput.buffer || pdfInput.buffer.byteLength === 0) {
+        throw new Error('PDFバッファが破棄されているため再読み込みできません');
+      }
+      inputBytes = pdfInput;
+    } else if (pdfInput instanceof ArrayBuffer) {
+      if (pdfInput.byteLength === 0) {
+        throw new Error('PDFバッファが破棄されているため再読み込みできません');
+      }
+      inputBytes = new Uint8Array(pdfInput);
+    } else {
+      inputBytes = new Uint8Array(pdfInput);
+    }
+
+    // Allocate a brand new Uint8Array so PDF.js worker transfer ONLY detaches this temporary copy
+    const safeData = new Uint8Array(inputBytes.byteLength);
+    safeData.set(inputBytes);
+
     const loadingTask = pdfjsLib.getDocument({
-      data: pdfBuffer,
+      data: safeData,
       cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version || '6.2.108'}/cmaps/`,
       cMapPacked: true,
     });
