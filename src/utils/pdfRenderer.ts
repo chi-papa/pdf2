@@ -3,8 +3,10 @@ import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { analyzeCanvasPage } from './markDetector';
 import { DetectionSettings, PageAnalysis } from '../types';
 
-// Set worker source to bundled Vite asset URL
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+// Set worker source to bundled Vite asset URL or CDN fallback
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  pdfWorker ||
+  `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version || '6.2.108'}/build/pdf.worker.min.mjs`;
 
 /**
  * Renders each page of a PDF buffer onto an HTML Canvas and performs corner mark detection.

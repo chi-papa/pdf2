@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { X, CheckCircle, AlertTriangle, Eye, Layers, CornerDownRight, ZoomIn, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
-import { FaxDocument } from '../types';
+import React, { useState, useEffect } from 'react';
+import { X, CheckCircle, AlertTriangle, Eye, Layers, CornerDownRight, ZoomIn, FileText, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { FaxDocument, PageAnalysis } from '../types';
+import { processPdfDocument } from '../utils/pdfRenderer';
 
 interface InspectionModalProps {
   doc: FaxDocument | null;
@@ -14,10 +15,45 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
   onForceCategoryChange,
 }) => {
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
+  const [localPages, setLocalPages] = useState<PageAnalysis[]>([]);
+  const [isLoadingPages, setIsLoadingPages] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!doc) return;
+
+    setCurrentPageIdx(0);
+    setLoadError(null);
+
+    // If doc already has rendered pages, use them
+    if (doc.pages && doc.pages.length > 0) {
+      setLocalPages(doc.pages);
+      setIsLoadingPages(false);
+      return;
+    }
+
+    // Otherwise render PDF on-the-fly from pdfBuffer so it always displays!
+    if (doc.pdfBuffer) {
+      setIsLoadingPages(true);
+      processPdfDocument(doc.pdfBuffer)
+        .then((analyzedPages) => {
+          setLocalPages(analyzedPages);
+          setIsLoadingPages(false);
+        })
+        .catch((err) => {
+          console.error('Failed to render PDF in InspectionModal:', err);
+          setLoadError(err.message || 'PDFの描写解析に失敗しました');
+          setIsLoadingPages(false);
+        });
+    } else {
+      setLocalPages([]);
+      setIsLoadingPages(false);
+    }
+  }, [doc]);
 
   if (!doc) return null;
 
-  const pages = doc.pages || [];
+  const pages = localPages.length > 0 ? localPages : (doc.pages || []);
   const currentPage = pages[currentPageIdx] || pages[0];
 
   const getCornerTitle = (pos: string) => {
@@ -243,6 +279,18 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                   </div>
                 )}
               </div>
+            </div>
+          ) : isLoadingPages ? (
+            <div className="p-12 text-center text-slate-600 space-y-3">
+              <RefreshCw className="w-8 h-8 animate-spin text-indigo-600 mx-auto" />
+              <p className="text-sm font-bold text-slate-800">PDFイメージと四隅マークをリアルタイム解析描画中...</p>
+              <p className="text-xs text-slate-500">少々お待ちください</p>
+            </div>
+          ) : loadError ? (
+            <div className="p-8 bg-rose-50 border border-rose-200 rounded-2xl text-center text-rose-700 space-y-2">
+              <AlertTriangle className="w-8 h-8 text-rose-500 mx-auto" />
+              <p className="font-bold text-sm">PDFのプレビュー描画に失敗しました</p>
+              <p className="text-xs font-mono text-rose-600">{loadError}</p>
             </div>
           ) : (
             <div className="p-8 text-center text-slate-500">ページデータの解析情報がありません。</div>

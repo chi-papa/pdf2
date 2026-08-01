@@ -238,10 +238,13 @@ export const FileQueueView: React.FC<FileQueueViewProps> = ({
                 key={doc.id}
                 className="p-4 hover:bg-slate-50/80 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
               >
-                {/* File Info */}
-                <div className="flex items-start space-x-3">
+                {/* File Info - Clickable for PC Inspection */}
+                <div
+                  onClick={() => onInspectDocument(doc)}
+                  className="flex items-start space-x-3 cursor-pointer group flex-1"
+                >
                   <div
-                    className={`p-2.5 rounded-xl border shrink-0 ${
+                    className={`p-2.5 rounded-xl border shrink-0 transition-all group-hover:scale-105 ${
                       doc.category === '注文書'
                         ? 'bg-blue-50 border-blue-200 text-blue-600'
                         : doc.category === '在庫確認'
@@ -254,7 +257,9 @@ export const FileQueueView: React.FC<FileQueueViewProps> = ({
 
                   <div className="space-y-1">
                     <div className="flex items-center space-x-2 flex-wrap">
-                      <span className="font-bold text-slate-800 text-sm">{doc.fileName}</span>
+                      <span className="font-bold text-slate-800 text-sm group-hover:text-blue-600 group-hover:underline transition-colors">
+                        {doc.fileName}
+                      </span>
 
                       {/* Status Badge */}
                       <span
