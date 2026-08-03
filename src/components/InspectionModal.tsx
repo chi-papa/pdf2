@@ -255,7 +255,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                         }}
                         className="flex-1 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 font-semibold hover:bg-blue-100 text-center"
                       >
-                        注文書 (●) に指定
+                        注文書 (■) に指定
                       </button>
                       <button
                         onClick={() => {
@@ -264,7 +264,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                         }}
                         className="flex-1 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold hover:bg-emerald-100 text-center"
                       >
-                        在庫確認 (■) に指定
+                        在庫確認 (●) に指定
                       </button>
                       <button
                         onClick={() => {

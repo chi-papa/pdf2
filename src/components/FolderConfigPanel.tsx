@@ -53,10 +53,86 @@ export const FolderConfigPanel: React.FC<FolderConfigPanelProps> = ({
   const [customImageSrc, setCustomImageSrc] = useState<string | null>(null);
   const [realtimeAnalysis, setRealtimeAnalysis] = useState<PageAnalysis | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [previewViewMode, setPreviewViewMode] = useState<'corners' | 'full'>('corners');
+  const [previewViewMode, setPreviewViewMode] = useState<'full' | 'corners'>('full');
+
+  const [isDraggingCanvas, setIsDraggingCanvas] = useState(false);
 
   const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Handle Pointer Events for interactive canvas corner box resizing (mouse & touch)
+  const handleCanvasPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = previewCanvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const mouseX = (e.clientX - rect.left) * scaleX;
+    const mouseY = (e.clientY - rect.top) * scaleY;
+
+    // Calculate distance from closest outer edge
+    const isLeft = mouseX < canvas.width / 2;
+    const isTop = mouseY < canvas.height / 2;
+
+    const distX = isLeft ? mouseX : canvas.width - mouseX;
+    const distY = isTop ? mouseY : canvas.height - mouseY;
+
+    const maxDim = Math.max(distX / canvas.width, distY / canvas.height);
+    const newMargin = Math.min(40, Math.max(5, Math.round(maxDim * 100)));
+
+    onUpdateDetectionSettings({
+      ...detectionSettings,
+      cornerMarginPercent: newMargin,
+    });
+
+    setIsDraggingCanvas(true);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleCanvasPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = previewCanvasRef.current;
+    if (!canvas) return;
+
+    if (isDraggingCanvas) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const mouseX = (e.clientX - rect.left) * scaleX;
+      const mouseY = (e.clientY - rect.top) * scaleY;
+
+      const isLeft = mouseX < canvas.width / 2;
+      const isTop = mouseY < canvas.height / 2;
+
+      const distX = isLeft ? mouseX : canvas.width - mouseX;
+      const distY = isTop ? mouseY : canvas.height - mouseY;
+
+      const maxDim = Math.max(distX / canvas.width, distY / canvas.height);
+      const newMargin = Math.min(40, Math.max(5, Math.round(maxDim * 100)));
+
+      if (newMargin !== detectionSettings.cornerMarginPercent) {
+        onUpdateDetectionSettings({
+          ...detectionSettings,
+          cornerMarginPercent: newMargin,
+        });
+      }
+    }
+  };
+
+  const handleCanvasPointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (isDraggingCanvas) {
+      setIsDraggingCanvas(false);
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {
+        // ignore
+      }
+    }
+  };
 
   // Save Toast Feedback
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
@@ -171,43 +247,72 @@ export const FolderConfigPanel: React.FC<FolderConfigPanelProps> = ({
       const cropH = Math.floor(canvas.height * margin);
 
       const cornerCoords = {
-        'top-left': { x: 0, y: 0, label: '左上' },
-        'top-right': { x: canvas.width - cropW, y: 0, label: '右上' },
-        'bottom-left': { x: 0, y: canvas.height - cropH, label: '左下' },
-        'bottom-right': { x: canvas.width - cropW, y: canvas.height - cropH, label: '右下' },
+        'top-left': { x: 0, y: 0, label: '左上 (Top-Left)' },
+        'top-right': { x: canvas.width - cropW, y: 0, label: '右上 (Top-Right)' },
+        'bottom-left': { x: 0, y: canvas.height - cropH, label: '左下 (Bottom-Left)' },
+        'bottom-right': { x: canvas.width - cropW, y: canvas.height - cropH, label: '右下 (Bottom-Right)' },
       };
 
       realtimeAnalysis.corners.forEach((corner) => {
         const coord = cornerCoords[corner.position];
         if (!coord) return;
 
-        // Draw search area bounding box
-        ctx.strokeStyle = corner.detectedMark !== 'none' ? '#10b981' : '#f43f5e';
-        ctx.lineWidth = Math.max(3, Math.round(canvas.width / 250));
-        ctx.fillStyle = corner.detectedMark !== 'none' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(244, 63, 94, 0.10)';
+        const isDetected = corner.detectedMark !== 'none';
+        const isSquare = corner.detectedMark === 'square';
+        const isCircle = corner.detectedMark === 'circle';
+
+        // Set line style: Solid line for detected, Dashed line for undetected
+        ctx.save();
+        if (isDetected) {
+          ctx.setLineDash([]); // solid line
+          ctx.strokeStyle = isSquare ? '#2563eb' : '#059669'; // Blue for square, Emerald for circle
+          ctx.fillStyle = isSquare ? 'rgba(37, 99, 235, 0.18)' : 'rgba(5, 150, 105, 0.18)';
+        } else {
+          ctx.setLineDash([10, 8]); // dashed line for non-detected
+          ctx.strokeStyle = '#ef4444'; // Bright red for missed/undetected corner
+          ctx.fillStyle = 'rgba(239, 68, 68, 0.08)';
+        }
+
+        ctx.lineWidth = Math.max(4, Math.round(canvas.width / 200));
+
+        // Fill & Stroke Corner Search Box
         ctx.fillRect(coord.x, coord.y, cropW, cropH);
         ctx.strokeRect(coord.x, coord.y, cropW, cropH);
+        ctx.restore();
+
+        // Draw Margin Percentage Tag on Bounding Box Edge
+        ctx.save();
+        ctx.fillStyle = isDetected ? (isSquare ? '#1e40af' : '#065f46') : '#991b1b';
+        ctx.font = 'bold ' + Math.max(11, Math.round(canvas.width / 60)) + 'px monospace';
+        const rangeLabel = `探知範囲: 端から${detectionSettings.cornerMarginPercent}%`;
+        const rangeMetrics = ctx.measureText(rangeLabel);
+        
+        let rx = coord.x + 8;
+        let ry = coord.y + cropH - 8;
+        if (corner.position.startsWith('bottom')) {
+          ry = coord.y + 18;
+        }
+        ctx.fillText(rangeLabel, rx, ry);
+        ctx.restore();
 
         // Draw Mark Tag Badge
-        const tagText =
-          corner.detectedMark === 'square'
-            ? '■ 注文書'
-            : corner.detectedMark === 'circle'
-            ? '● 在庫確認'
-            : '未検出';
+        const tagText = isSquare
+          ? `■ 注文書マーク (${corner.confidence}%)`
+          : isCircle
+          ? `● 在庫確認マーク (${corner.confidence}%)`
+          : '⚠️ マーク未検出 (範囲外または閾値未達)';
 
-        const badgeBg =
-          corner.detectedMark === 'square'
-            ? '#2563eb'
-            : corner.detectedMark === 'circle'
-            ? '#059669'
-            : '#e11d48';
+        const badgeBg = isSquare
+          ? '#2563eb'
+          : isCircle
+          ? '#059669'
+          : '#dc2626';
 
-        ctx.font = 'bold ' + Math.max(14, Math.round(canvas.width / 40)) + 'px sans-serif';
+        ctx.font = 'bold ' + Math.max(13, Math.round(canvas.width / 45)) + 'px sans-serif';
         const textMetrics = ctx.measureText(tagText);
-        const padding = 8;
+        const padding = 10;
         const badgeW = textMetrics.width + padding * 2;
-        const badgeH = Math.max(26, Math.round(canvas.width / 30));
+        const badgeH = Math.max(28, Math.round(canvas.width / 28));
 
         let bx = coord.x + 10;
         let by = coord.y + 10;
@@ -218,16 +323,83 @@ export const FolderConfigPanel: React.FC<FolderConfigPanelProps> = ({
           by = coord.y + cropH - badgeH - 10;
         }
 
+        // Draw Badge Background with Outer Glow / Shadow Effect
+        ctx.save();
         ctx.fillStyle = badgeBg;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetY = 2;
         ctx.beginPath();
-        ctx.roundRect ? ctx.roundRect(bx, by, badgeW, badgeH, 6) : ctx.rect(bx, by, badgeW, badgeH);
+        if (ctx.roundRect) {
+          ctx.roundRect(bx, by, badgeW, badgeH, 8);
+        } else {
+          ctx.rect(bx, by, badgeW, badgeH);
+        }
         ctx.fill();
+        ctx.restore();
 
         ctx.fillStyle = '#ffffff';
-        ctx.fillText(tagText, bx + padding, by + badgeH - 7);
+        ctx.fillText(tagText, bx + padding, by + badgeH - 8);
+
+        // Draw Interactive Drag Handle Knob at inner corner of the search box
+        const knobX = corner.position.includes('right') ? canvas.width - cropW : cropW;
+        const knobY = corner.position.includes('bottom') ? canvas.height - cropH : cropH;
+        const knobR = Math.max(14, Math.round(canvas.width / 45));
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(knobX, knobY, knobR, 0, Math.PI * 2);
+        ctx.fillStyle = isDraggingCanvas ? '#0284c7' : '#2563eb'; // Cyan-blue when dragging, blue default
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 12;
+        ctx.shadowOffsetY = 3;
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#ffffff';
+        ctx.stroke();
+
+        // Inner arrow icon
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold ' + Math.round(knobR * 1.1) + 'px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const arrowChar = corner.position === 'top-left' || corner.position === 'bottom-right' ? '⤢' : '⤡';
+        ctx.fillText(arrowChar, knobX, knobY);
+        ctx.restore();
       });
+
+      // If currently dragging or hovered, draw floating center guide text
+      ctx.save();
+      const guideText = isDraggingCanvas
+        ? `↔ 範囲調整中: 端から ${detectionSettings.cornerMarginPercent}% (タップ/ドラッグ移動中)`
+        : `💡 枠や角の青丸ノブ (⤢) をドラッグ/タップして範囲を自由に調整できます`;
+
+      ctx.font = 'bold ' + Math.max(13, Math.round(canvas.width / 45)) + 'px sans-serif';
+      const gMetrics = ctx.measureText(guideText);
+      const gPad = 14;
+      const gW = gMetrics.width + gPad * 2;
+      const gH = Math.max(32, Math.round(canvas.width / 24));
+      const gX = (canvas.width - gW) / 2;
+      const gY = canvas.height - gH - 16;
+
+      ctx.fillStyle = isDraggingCanvas ? 'rgba(15, 23, 42, 0.92)' : 'rgba(15, 23, 42, 0.85)';
+      ctx.shadowColor = 'rgba(0,0,0,0.4)';
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(gX, gY, gW, gH, 10);
+      } else {
+        ctx.rect(gX, gY, gW, gH);
+      }
+      ctx.fill();
+
+      ctx.fillStyle = isDraggingCanvas ? '#38bdf8' : '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(guideText, canvas.width / 2, gY + gH / 2);
+      ctx.restore();
     };
-  }, [realtimeAnalysis, detectionSettings, previewViewMode]);
+  }, [realtimeAnalysis, detectionSettings, previewViewMode, isDraggingCanvas]);
 
   // Handle Upload Custom FAX Image
   const handleCustomUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -664,11 +836,116 @@ export const FolderConfigPanel: React.FC<FolderConfigPanelProps> = ({
                     </button>
                   </div>
 
-                  {/* 1. Dark Threshold (二値化 輝度閾値) */}
+                  {/* 0. Min Required Marks Threshold */}
+                  <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                    <div className="flex justify-between items-center">
+                      <label className="font-bold text-slate-900 flex items-center space-x-1">
+                        <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
+                        <span>0. 認識に必要なマーク個数 (閾値)</span>
+                      </label>
+                      <span className="font-mono font-extrabold text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                        {detectionSettings.minRequiredMarks || 2} 個以上
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-1.5 pt-1">
+                      {[1, 2, 3, 4].map((num) => {
+                        const currentVal = detectionSettings.minRequiredMarks || 2;
+                        const isSelected = currentVal === num;
+                        return (
+                          <button
+                            key={num}
+                            type="button"
+                            onClick={() =>
+                              onUpdateDetectionSettings({
+                                ...detectionSettings,
+                                minRequiredMarks: num,
+                              })
+                            }
+                            className={`py-1.5 px-2 rounded-lg font-bold text-xs transition-all border cursor-pointer ${
+                              isSelected
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-blue-400'
+                            }`}
+                          >
+                            {num === 2 ? `${num}個 (推奨)` : `${num}個`}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1 leading-normal">
+                      4角のうち「■」がこの指定個数以上検出されると「注文書」と判定されます。（かすれが多い場合は1個〜2個、誤検出を防ぎたい場合は3個〜4個に設定）
+                    </p>
+                  </div>
+
+                  {/* 1. Corner Margin Percent with Expand/Contract Buttons */}
+                  <div className="space-y-2 bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                    <div className="flex justify-between items-center">
+                      <label className="font-bold text-slate-900">
+                        1. 探知エリア範囲の拡大・縮小
+                      </label>
+                      <span className="font-mono font-extrabold text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                        端から {detectionSettings.cornerMarginPercent}%
+                      </span>
+                    </div>
+
+                    {/* Interactive Zoom Buttons */}
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onUpdateDetectionSettings({
+                            ...detectionSettings,
+                            cornerMarginPercent: Math.max(5, detectionSettings.cornerMarginPercent - 2),
+                          })
+                        }
+                        className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 text-xs font-bold border border-slate-300 flex items-center space-x-1 cursor-pointer shrink-0 transition-all"
+                        title="探知枠を小さく縮小"
+                      >
+                        <span className="text-base font-extrabold leading-none">−</span>
+                        <span>範囲を縮小</span>
+                      </button>
+
+                      <input
+                        type="range"
+                        min="5"
+                        max="35"
+                        step="1"
+                        value={detectionSettings.cornerMarginPercent}
+                        onChange={(e) =>
+                          onUpdateDetectionSettings({
+                            ...detectionSettings,
+                            cornerMarginPercent: Number(e.target.value),
+                          })
+                        }
+                        className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onUpdateDetectionSettings({
+                            ...detectionSettings,
+                            cornerMarginPercent: Math.min(35, detectionSettings.cornerMarginPercent + 2),
+                          })
+                        }
+                        className="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 active:bg-blue-200 text-blue-800 text-xs font-bold border border-blue-300 flex items-center space-x-1 cursor-pointer shrink-0 transition-all"
+                        title="探知枠を大きく拡大"
+                      >
+                        <span className="text-base font-extrabold leading-none">＋</span>
+                        <span>範囲を拡大</span>
+                      </button>
+                    </div>
+
+                    <p className="text-[10px] text-slate-500 leading-normal">
+                      「＋範囲を拡大」を押すと対象用紙全体の4箇所の枠線が広がります。印刷やスキャンでマークが用紙内側に寄っている場合は枠を拡大してください。
+                    </p>
+                  </div>
+
+                  {/* 2. Dark Threshold (二値化 輝度閾値) */}
                   <div className="space-y-1 bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
                     <div className="flex justify-between items-center">
                       <label className="font-bold text-slate-900 flex items-center space-x-1.5">
-                        <span>1. 二値化 輝度閾値 (Dark Threshold)</span>
+                        <span>2. 二値化 輝度閾値 (Dark Threshold)</span>
                       </label>
                       <span className="font-mono font-extrabold text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
                         {detectionSettings.darkThreshold} / 255
@@ -694,35 +971,6 @@ export const FolderConfigPanel: React.FC<FolderConfigPanelProps> = ({
                     </div>
                     <p className="text-[10px] text-slate-500 mt-1 leading-normal">
                       かすれたFAXはスライダーを右に動かす（140→180）と黒マークとして認識されやすくなります。
-                    </p>
-                  </div>
-
-                  {/* 2. Corner Margin Percent */}
-                  <div className="space-y-1 bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
-                    <div className="flex justify-between items-center">
-                      <label className="font-bold text-slate-900">
-                        2. 四隅探知エリア (Corner Margin)
-                      </label>
-                      <span className="font-mono font-extrabold text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                        端から {detectionSettings.cornerMarginPercent}%
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="5"
-                      max="35"
-                      step="1"
-                      value={detectionSettings.cornerMarginPercent}
-                      onChange={(e) =>
-                        onUpdateDetectionSettings({
-                          ...detectionSettings,
-                          cornerMarginPercent: Number(e.target.value),
-                        })
-                      }
-                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                    />
-                    <p className="text-[10px] text-slate-500">
-                      スキャンズレでマークが用紙の内側に印刷されている場合、探知パーセントを大きく（18%→25%）します。
                     </p>
                   </div>
 
@@ -846,8 +1094,11 @@ export const FolderConfigPanel: React.FC<FolderConfigPanelProps> = ({
                               【{realtimeAnalysis.detectedCategory}】へ分類
                             </span>
                           </div>
-                          <p className="text-xs opacity-80 mt-0.5">
+                          <p className="text-xs opacity-90 mt-0.5">
                             検出結果: 黒四角「■」× {realtimeAnalysis.corners.filter((c) => c.detectedMark === 'square').length} 個 / 黒丸「●」× {realtimeAnalysis.corners.filter((c) => c.detectedMark === 'circle').length} 個
+                            <span className="font-bold ml-1.5 underline decoration-slate-400">
+                              (判定設定: {detectionSettings.minRequiredMarks || 2}個以上検出で確定)
+                            </span>
                           </p>
                         </div>
                       </div>
@@ -1000,12 +1251,17 @@ export const FolderConfigPanel: React.FC<FolderConfigPanelProps> = ({
                   {/* Mode B: Full Page Preview Canvas */}
                   {previewViewMode === 'full' && (
                     <div className="space-y-2">
-                      <span className="font-bold text-xs text-slate-700 flex items-center space-x-1.5">
-                        <Layers className="w-4 h-4 text-blue-600" />
-                        <span>全ページプレビュー & コーナーROI緑/赤枠オーバーレイ</span>
-                      </span>
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-slate-700 flex items-center space-x-1.5">
+                          <Layers className="w-4 h-4 text-blue-600" />
+                          <span>全ページプレビュー & コーナー探知枠オーバーレイ</span>
+                        </span>
+                        <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 animate-pulse">
+                          💡 画面上の枠をタップ/ドラッグで直接拡大・縮小可能
+                        </span>
+                      </div>
 
-                      <div className="bg-slate-900 rounded-2xl p-3 border border-slate-800 shadow-md overflow-hidden flex items-center justify-center min-h-[360px] max-h-[520px]">
+                      <div className="bg-slate-900 rounded-2xl p-3 border border-slate-800 shadow-md overflow-hidden flex items-center justify-center min-h-[360px] max-h-[520px] relative">
                         {isProcessing ? (
                           <div className="text-center py-12 text-slate-400 space-y-2">
                             <Sparkles className="w-6 h-6 animate-spin text-cyan-400 mx-auto" />
@@ -1014,7 +1270,12 @@ export const FolderConfigPanel: React.FC<FolderConfigPanelProps> = ({
                         ) : (
                           <canvas
                             ref={previewCanvasRef}
-                            className="max-w-full max-h-[480px] object-contain rounded-lg shadow-2xl border border-slate-700"
+                            onPointerDown={handleCanvasPointerDown}
+                            onPointerMove={handleCanvasPointerMove}
+                            onPointerUp={handleCanvasPointerUp}
+                            onPointerCancel={handleCanvasPointerUp}
+                            className="max-w-full max-h-[480px] object-contain rounded-lg shadow-2xl border border-slate-700 cursor-grab active:cursor-grabbing touch-none select-none"
+                            title="探知枠や角の青いノブ(⤢)をドラッグ/タップして探知範囲を直感的に変更できます"
                           />
                         )}
                       </div>

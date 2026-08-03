@@ -57,6 +57,7 @@ export interface DetectionSettings {
   maxMarkSizePx: number;
   circularityThreshold: number; // >0.8 for circle ●
   squareExtentThreshold: number; // >0.8 for square ■
+  minRequiredMarks?: number; // min detected marks needed (1-4, default: 2)
 }
 
 export interface ProcessingLog {

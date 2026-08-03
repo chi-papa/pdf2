@@ -7,6 +7,7 @@ export const DEFAULT_DETECTION_SETTINGS: DetectionSettings = {
   maxMarkSizePx: 180, // maximum size in pixels
   circularityThreshold: 0.70, // circle threshold
   squareExtentThreshold: 0.70, // lowered square extent threshold from 0.80 to 0.70 for imperfect square marks
+  minRequiredMarks: 2, // minimum detected marks needed (1-4)
 };
 
 /**
@@ -82,20 +83,16 @@ export function analyzeCanvasPage(
     };
   });
 
-  // Category decision for page: flexible threshold (at least 2 marks anywhere in the 4 corners for FAX orientation invariance)
-  // 注文書 = 黒四角「■」, 在庫確認 = 黒丸「●」
+  // Category decision for page based on minRequiredMarks threshold
+  const reqMarks = settings.minRequiredMarks || 2;
   const squareCount = corners.filter((c) => c.detectedMark === 'square').length;
   const circleCount = corners.filter((c) => c.detectedMark === 'circle').length;
 
   let detectedCategory: '注文書' | '在庫確認' | '対象外' = '対象外';
   
-  if (squareCount >= 2 && squareCount >= circleCount) {
+  if (squareCount >= reqMarks && squareCount >= circleCount) {
     detectedCategory = '注文書';
-  } else if (circleCount >= 2 && circleCount > squareCount) {
-    detectedCategory = '在庫確認';
-  } else if (squareCount === 1 && circleCount === 0) {
-    detectedCategory = '注文書';
-  } else if (circleCount === 1 && squareCount === 0) {
+  } else if (circleCount >= reqMarks && circleCount > squareCount) {
     detectedCategory = '在庫確認';
   }
 
